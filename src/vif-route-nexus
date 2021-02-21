@@ -1,0 +1,37 @@
+#!/usr/bin/bash -e
+
+# This script sets up an interface attached to the nexus system.
+
+n=vif-route-nexus
+# TODO: replace with information written to a qubesdb file
+# readable by the nexus VM.  This shouldn't be on disk.
+# TODO: retry something to configure the peers (frontends)
+# via DHCP.
+pt=/rw/config/nexus-peer-table
+
+logger -t vif-route-qubes "Interface is being managed"
+trap 'logger -t $n "There was an error configuring the VIF"' EXIT
+
+. /etc/xen/scripts/vif-common.sh
+
+# debug code
+# set | logger -t $n
+
+if [ "$command" = "online" ] ; then
+    ip link set dev "$vifname" up
+    ip=$(grep "^$vifname " "$pt" | awk ' { print $2 } ')
+    routes=$(grep "^$vifname " "$pt" | awk ' { print $3 } ')
+    if [ "$ip" != "" ] ; then
+        ip addr replace "$ip"/32 dev "$vifname"
+    fi
+    while [ "$routes" != "" ] ; do
+        route=$(echo "$routes" | cut -d , -f 1)
+        if [ "$route" != "" ] ; then
+            ip route replace "$route" dev "$vifname"
+        fi
+        routes=${routes#"$route"}
+        routes=${routes#","}
+    done
+fi
+
+trap 'logger -t $n "VIF $vifname configured successfully"' EXIT

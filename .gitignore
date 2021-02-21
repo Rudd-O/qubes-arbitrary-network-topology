@@ -1,0 +1,11 @@
+rpm/
+pkgs/
+*.pyc
+*.pyo
+*~
+*.tar.gz
+*.rpm
+.*.swp
+build
+*.egg-info
+src/*.service

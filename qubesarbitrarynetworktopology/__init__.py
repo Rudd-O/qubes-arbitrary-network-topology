@@ -123,7 +123,7 @@ class QubesArbitraryNetworkTopologyExtension(qubes.ext.Extension):
 
     def with_graphs_loaded(f):
         def g(*a, **kw):
-            self._delayed_graphs_loader()
+            a[0]._delayed_graphs_loader()
             return f(*a, **kw)
 
         g.__name__ = f.__name__

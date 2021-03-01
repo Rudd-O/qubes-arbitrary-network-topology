@@ -86,7 +86,7 @@ make install DESTDIR=$RPM_BUILD_ROOT SYSCONFDIR=%{_sysconfdir}
 find $RPM_BUILD_ROOT
 
 %files
-%attr(0755, root, root) %{_sysconfdir}/xen/vif-route-nexus
+%attr(0755, root, root) %{_sysconfdir}/xen/scripts/vif-route-nexus
 %doc README.md
 
 %files -n       qubes-core-admin-addon-arbitrary-network-topology

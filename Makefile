@@ -25,7 +25,7 @@ rpm: dist
 	cd $(ROOT_DIR) ; mv -f builddir.rpm/*/* . && rm -rf builddir.rpm
 
 install-template:
-	install -Dm 755 src/vif-route-nexus -t $(DESTDIR)/$(SYSCONFDIR)/xen/
+	install -Dm 755 src/vif-route-nexus -t $(DESTDIR)/$(SYSCONFDIR)/xen/scripts/
 
 # Python 3 is always used for Qubes admin package.
 install-dom0:

@@ -3,7 +3,7 @@
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
 Name:           qubes-arbitrary-network-topology
-Version:        0.0.13
+Version:        0.0.14
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Turn your Qubes OS into an arbitrary network topology host
 BuildArch:      noarch
@@ -90,7 +90,7 @@ find $RPM_BUILD_ROOT
 %doc README.md
 
 %files -n       qubes-core-admin-addon-arbitrary-network-topology
-%attr(0644, root, root) %{python3_sitelib}/qubesarbitrarynetworktopology
+%attr(0644, root, root) %{python3_sitelib}/qubesarbitrarynetworktopology/*
 %{python3_sitelib}/qubesarbitrarynetworktopology-*.egg-info
 
 %post -n         qubes-core-admin-addon-arbitrary-network-topology

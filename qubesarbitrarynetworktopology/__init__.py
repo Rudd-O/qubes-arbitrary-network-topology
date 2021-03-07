@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import asyncio
+import contextlib
 import logging
 import subprocess
 import sys
@@ -20,6 +21,15 @@ except ImportError:
 
 
 log = logging.getLogger(__name__)
+
+
+@contextlib.contextmanager
+def with_qubes():
+    q = qubes.Qubes()
+    try:
+        yield q
+    finally:
+        q.close()
 
 
 def attach(backend, frontend):
@@ -53,83 +63,82 @@ if qubes:
 
         config = None
         active = None
-        _qubes = None
 
         def __init__(self):
             super().__init__()
 
         def _delayed_graphs_loader(self, force_feature=None, for_vm=None):
-            if self._qubes is None:
-                log.info(
-                    "Loading list of VMs for the arbitrary network topology configuration"
-                )
-                self._qubes = qubes.Qubes()
-            if self.config is None or for_vm is not None:
-                vm_table = {
-                    backend.name: (
-                        (force_feature)
-                        if for_vm is not None and for_vm == backend.name
-                        else (backend.features.get("attach-network-to") or "")
-                    )
-                    for backend in self._qubes.domains
-                }
-                self.config = ConjoinTracker.from_vm_table(vm_table)
-                print("Loaded configuration: %s" % self.config, file=sys.stderr)
+            with with_qubes() as q:
+                if self.config is None or for_vm is not None:
+                    vm_table = {
+                        backend.name: (
+                            (force_feature)
+                            if for_vm is not None and for_vm == backend.name
+                            else (backend.features.get("attach-network-to") or "")
+                        )
+                        for backend in q.domains
+                    }
+                    self.config = ConjoinTracker.from_vm_table(vm_table)
+                    print("Loaded configuration: %s" % self.config, file=sys.stderr)
             if self.active is None:
                 self.active = ConjoinStore().load()
             print("Active configuration: %s" % self.active, file=sys.stderr)
 
         def conjoin_vm_with_peers(self, vm):
-            domains = self._qubes.domains
-            for action, backend, frontend, config in self.config.diff(
-                self.active, limit_to_vm=vm
-            ):
-                if backend not in domains or frontend not in domains:
-                    continue
-                if not all(
-                    [
-                        domains[backend].is_running(),
-                        not domains[backend].is_paused(),
-                        domains[frontend].is_running(),
-                        not domains[frontend].is_paused(),
-                    ]
+            with with_qubes() as q:
+                domains = q.domains
+                for action, backend, frontend, config in self.config.diff(
+                    self.active, limit_to_vm=vm
                 ):
-                    continue
-                if action == ACTION_ADD:
-                    attached_vifid = attach(backend, frontend)
-                    self.active.conjoin(
-                        backend,
-                        frontend,
-                        config=config,
-                        frontend_network_id=attached_vifid,
-                    )
-                    log.info(
-                        "Attached backend %s to frontend %s with frontend VIF %s",
-                        backend,
-                        frontend,
-                        attached_vifid,
-                    )
-                elif action == ACTION_REMOVE:
-                    vifid_to_detach = self.active.frontend_network_id(backend, frontend)
-                    detach(frontend, vifid_to_detach)
-                    self.active.disjoin(backend, frontend)
-                    log.info(
-                        "Detached backend %s from frontend %s VIF %s",
-                        backend,
-                        frontend,
-                        vifid_to_detach,
-                    )
-            ConjoinStore().save(self.active)
+                    if backend not in domains or frontend not in domains:
+                        continue
+                    if not all(
+                        [
+                            domains[backend].is_running(),
+                            not domains[backend].is_paused(),
+                            domains[frontend].is_running(),
+                            not domains[frontend].is_paused(),
+                        ]
+                    ):
+                        continue
+                    if action == ACTION_ADD:
+                        attached_vifid = attach(backend, frontend)
+                        self.active.conjoin(
+                            backend,
+                            frontend,
+                            config=config,
+                            frontend_network_id=attached_vifid,
+                        )
+                        log.info(
+                            "Attached backend %s to frontend %s with frontend VIF %s",
+                            backend,
+                            frontend,
+                            attached_vifid,
+                        )
+                    elif action == ACTION_REMOVE:
+                        vifid_to_detach = self.active.frontend_network_id(
+                            backend, frontend
+                        )
+                        detach(frontend, vifid_to_detach)
+                        self.active.disjoin(backend, frontend)
+                        log.info(
+                            "Detached backend %s from frontend %s VIF %s",
+                            backend,
+                            frontend,
+                            vifid_to_detach,
+                        )
+                ConjoinStore().save(self.active)
 
         def disjoin_vm_from_peers(self, vm):
-            domains = self._qubes.domains
-            combos = self.active.connections(vm)
-            for backend, frontend in combos:
-                if backend not in domains or frontend not in domains:
-                    continue
-                self.active.disjoin(backend, frontend)
-                log.info("Unlinked backend %s from frontend %s", backend, frontend)
-            ConjoinStore().save(self.active)
+            with with_qubes() as q:
+                domains = q.domains
+                combos = self.active.connections(vm)
+                for backend, frontend in combos:
+                    if backend not in domains or frontend not in domains:
+                        continue
+                    self.active.disjoin(backend, frontend)
+                    log.info("Unlinked backend %s from frontend %s", backend, frontend)
+                ConjoinStore().save(self.active)
 
         @qubes.ext.handler(
             "domain-feature-set:attach-network-to",
@@ -153,14 +162,3 @@ if qubes:
         def on_domain_shutdown(self, vm, unused_event, **kwargs):
             self._delayed_graphs_loader()
             self.disjoin_vm_from_peers(vm.name)
-
-        @qubes.ext.handler("domain-add", system=True)
-        @qubes.ext.handler("domain-delete", system=True)
-        def on_domain_added_or_delete(self, *unused_args, **unused_kwargs):
-            # Must reload the known list of VMs, therefore we reload it here.
-            log.info(
-                "Reloading list of VMs for the arbitrary network topology configuration"
-            )
-            if self._qubes:
-                self._qubes.close()
-            self._qubes = qubes.Qubes()

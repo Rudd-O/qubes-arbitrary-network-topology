@@ -25,11 +25,13 @@ log = logging.getLogger(__name__)
 
 @contextlib.contextmanager
 def with_qubes():
+    log.info("Opening Qubes connection")
     q = qubes.Qubes()
     try:
         yield q
     finally:
         q.close()
+        log.info("Closed Qubes connection")
 
 
 def attach(backend, frontend):

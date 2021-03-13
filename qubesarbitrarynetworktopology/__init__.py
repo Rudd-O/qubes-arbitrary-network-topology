@@ -42,19 +42,21 @@ def attach(backend, frontend):
             "backend=%s" % backend,
             "vifname=%s" % frontend,
             "script=%s" % "vif-route-nexus",
-        ]
+        ],
+        check=True,
     )
     p = subprocess.run(
         ["xl", "network-list", frontend],
         stdout=subprocess.PIPE,
         universal_newlines=True,
+        check=True,
     )
     vifid = [x for x in p.stdout.splitlines() if x.strip()][-1].split()[0]
     return vifid
 
 
 def detach(frontend, vifid):
-    _ = subprocess.run(["xl", "network-detach", frontend, vifid])
+    p = subprocess.run(["xl", "network-detach", frontend, vifid], check=True)
 
 
 if qubes:
@@ -102,31 +104,45 @@ if qubes:
                     ):
                         continue
                     if action == ACTION_ADD:
-                        attached_vifid = attach(backend, frontend)
-                        self.active.conjoin(
-                            backend,
-                            frontend,
-                            config=config,
-                            frontend_network_id=attached_vifid,
-                        )
-                        log.info(
-                            "Attached backend %s to frontend %s with frontend VIF %s",
-                            backend,
-                            frontend,
-                            attached_vifid,
-                        )
+                        try:
+                            attached_vifid = attach(backend, frontend)
+                            self.active.conjoin(
+                                backend,
+                                frontend,
+                                config=config,
+                                frontend_network_id=attached_vifid,
+                            )
+                            log.info(
+                                "Attached backend %s to frontend %s with frontend VIF %s",
+                                backend,
+                                frontend,
+                                attached_vifid,
+                            )
+                        except subprocess.CalledProcessError as e:
+                            log.exception(
+                                "Could not attach backend %s to frontend %s",
+                                backend,
+                                frontend,
+                            )
                     elif action == ACTION_REMOVE:
                         vifid_to_detach = self.active.frontend_network_id(
                             backend, frontend
                         )
-                        detach(frontend, vifid_to_detach)
+                        try:
+                            detach(frontend, vifid_to_detach)
+                            log.info(
+                                "Detached backend %s from frontend %s VIF %s",
+                                backend,
+                                frontend,
+                                vifid_to_detach,
+                            )
+                        except subprocess.CalledProcessError as e:
+                            log.exception(
+                                "Could not detach backend %s from frontend",
+                                backend,
+                                frontend,
+                            )
                         self.active.disjoin(backend, frontend)
-                        log.info(
-                            "Detached backend %s from frontend %s VIF %s",
-                            backend,
-                            frontend,
-                            vifid_to_detach,
-                        )
                 ConjoinStore().save(self.active)
 
         def disjoin_vm_from_peers(self, vm):
@@ -136,8 +152,35 @@ if qubes:
                 for backend, frontend in combos:
                     if backend not in domains or frontend not in domains:
                         continue
+                    if vm == frontend:
+                        # This VM was a frontend; the VIF is cleaned up by Xen
+                        # from tke backend automatically so we cannot detach it
+                        # even if we wanted to; hence we only deregister.
+                        log.info(
+                            "Unlinked already-detached backend %s from frontend %s VIF %s",
+                            backend,
+                            frontend,
+                            vifid_to_detach,
+                        )
+                        self.active.disjoin(backend, frontend)
+                        continue
+                    vifid_to_detach = self.active.frontend_network_id(backend, frontend)
+                    try:
+                        detach(frontend, vifid_to_detach)
+                        log.info(
+                            "Detached backend %s from frontend %s VIF %s",
+                            backend,
+                            frontend,
+                            vifid_to_detach,
+                        )
+                    except subprocess.CalledProcessError as e:
+                        log.exception(
+                            "Could not detach backend %s from frontend %s VIF %s",
+                            backend,
+                            frontend,
+                            vifid_to_detach,
+                        )
                     self.active.disjoin(backend, frontend)
-                    log.info("Unlinked backend %s from frontend %s", backend, frontend)
                 ConjoinStore().save(self.active)
 
         @qubes.ext.handler(

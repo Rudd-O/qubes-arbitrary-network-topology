@@ -154,6 +154,7 @@ if qubes:
                 for backend, frontend in combos:
                     if backend not in domains or frontend not in domains:
                         continue
+                    vifid_to_detach = self.active.frontend_network_id(backend, frontend)
                     if vm == frontend:
                         # This VM was a frontend; the VIF is cleaned up by Xen
                         # from tke backend automatically so we cannot detach it
@@ -166,7 +167,6 @@ if qubes:
                         )
                         self.active.disjoin(backend, frontend)
                         continue
-                    vifid_to_detach = self.active.frontend_network_id(backend, frontend)
                     try:
                         detach(frontend, vifid_to_detach)
                         log.info(

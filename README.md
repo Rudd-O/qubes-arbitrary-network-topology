@@ -5,7 +5,7 @@ an arbitrary network topology host.  It is ideal to create networks of interconn
 
 **Note**: this software only supports release 4.0 of Qubes OS.
 
-## How it works
+## How to use
 
 Suppose you have two VMs, which you want to be interconnected via (virtualized) Ethernet.  VM `F` (for *frontend*) will be attached to VM `B` (for *backend*).
 
@@ -14,6 +14,10 @@ With this software, all you have to do is attach a feature `attach-network-to` o
 ```
 # Run me on dom0 as your regular Qubes login user.
 qvm-features B attach-network-to F
+# You can add multiple VMs to attach to, by separating them with newlines like so:
+#     [user@dom0]$ qvm-features B attach-network-to 'F
+#     G
+#     H'
 ```
 
 And that's it.  As soon as both `B` and `F` are running, network interfaces will appear on each one; if you set the feature while the VMs were running, the interfaces will appear instantly.  The network interface in `F` will generally be named `eth0` (or `eth1` or other name increasing in value).  The network interface in `B` will be named after `F`.  IP networking on none of the network interfaces will be configured by the system.
@@ -52,6 +56,12 @@ method=disabled
 ```
 
 Judicious use of the `qvm-features` command will allow you to have arbitrarily connected VMs on your system, directly testing a panoply of network topologies.
+
+## How it works
+
+A small Qubes extension running under `qubesd` in dom0 monitors VMs as they start and stop.  If a VM starts and it has the `attach-network-to` feature, all VMs named in the feature will get Xen Ethernet frontends attached, with the backends attached to the VM that just started.  The converse is also true — if a VM starts, and it is mentioned in the `attach-network-to` feature of another VM, the frontend is attached to the VM that just started, and the backend is attached to the VM with the feature.
+
+It's very simple, no magic involved.
 
 ## How to install
 

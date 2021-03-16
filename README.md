@@ -28,7 +28,7 @@ Here is a sample IP configuration file for NetworkManager (to follow our example
 
 ```
 [connection]
-id=B
+id=F
 uuid=bb88cc30-1bcd-40bf-97f2-013626692bd1
 type=ethernet
 autoconnect-priority=-999
@@ -71,3 +71,7 @@ Build the two necessary RPM packages and then install them to the respective VMs
 2. The `qubes-core-admin-addon-arbitrary-network-topology` RPM: use the command `make rpm` on a VM or a `chroot` with the same Fedora version as your dom0 (that's Fedora 25 for Qubes 4.0).  Then copy the RPM into your `dom0`, and install the RPM.
 
 You should now be good to go.
+
+## Licensing
+
+This software is shared under the GNU GPL v2.  You can find the text of the GNU GPL in the `COPYING` file distributed with the source.

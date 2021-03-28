@@ -57,6 +57,14 @@ method=disabled
 
 Judicious use of the `qvm-features` command will allow you to have arbitrarily connected VMs on your system, directly testing a panoply of network topologies.
 
+## How to stop attaching network interfaces
+
+To stop attaching network interfaces to a VM `V` which already has a feature property `attach-network-to`, simply issue this command:
+
+```
+qvm-feature --unset V attach-network-to
+```
+
 ## How it works
 
 A small Qubes extension running under `qubesd` in dom0 monitors VMs as they start and stop.  If a VM starts and it has the `attach-network-to` feature, all VMs named in the feature will get Xen Ethernet frontends attached, with the backends attached to the VM that just started.  The converse is also true — if a VM starts, and it is mentioned in the `attach-network-to` feature of another VM, the frontend is attached to the VM that just started, and the backend is attached to the VM with the feature.

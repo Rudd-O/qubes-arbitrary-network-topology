@@ -3,7 +3,7 @@
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
 Name:           qubes-arbitrary-network-topology
-Version:        0.0.19
+Version:        0.0.20
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Turn your Qubes OS into an arbitrary network topology host
 BuildArch:      noarch
@@ -16,27 +16,16 @@ BuildRequires:  make
 BuildRequires:  coreutils
 BuildRequires:  tar
 BuildRequires:  findutils
-%if 0%{?fedora} < 31
-BuildRequires:  python2
-BuildRequires:  python2-rpm-macros
-%global pythoninterp %{_bindir}/python2
-%else
 BuildRequires:  python3
 BuildRequires:  python3-rpm-macros
+
 %global pythoninterp %{_bindir}/python3
-%endif
 
-%if 0%{?fedora} > 29
 BuildRequires:  systemd-rpm-macros
-%else
-%global _presetdir %{_prefix}/lib/systemd/system-preset
-%global _unitdir %{_prefix}/lib/systemd/system
-%endif
 
-Requires:       qubes-core-agent-networking >= 4.0.51-1
-Conflicts:      qubes-core-agent-networking >= 4.1
-Requires:       python2
-Requires:       python2-qubesdb
+Requires:       qubes-core-agent-networking >= 4.1
+Requires:       python3
+Requires:       python3-qubesdb
 
 %description
 This package lets you create arbitrary network topologies in your
@@ -59,9 +48,12 @@ BuildRequires:  python3
 BuildRequires:  python3-rpm-macros
 BuildRequires:  python3-setuptools
 
+%global pythoninterp %{_bindir}/python3
+
+BuildRequires:  systemd-rpm-macros
+
 Requires:       python3
-Requires:       qubes-core-dom0 >= 4.0.49-1
-Conflicts:      qubes-core-dom0 >= 4.1
+Requires:       qubes-core-dom0 >= 4.1
 
 %description -n qubes-core-admin-addon-arbitrary-network-topology
 This package lets you create arbitrary network topologies in your
@@ -94,19 +86,14 @@ find $RPM_BUILD_ROOT
 %{python3_sitelib}/qubesarbitrarynetworktopology-*.egg-info
 
 %post -n         qubes-core-admin-addon-arbitrary-network-topology
-%if 0%{?fedora} > 29
 %systemd_post qubesd.service
-%else
-systemctl try-restart qubesd.service
-%endif
 
 %postun -n       qubes-core-admin-addon-arbitrary-network-topology
-%if 0%{?fedora} > 29
 %systemd_postun_with_restart qubesd.service
-%else
-systemctl try-restart qubesd.service
-%endif
 
 %changelog
+* Mon Mar 02 2022 Manuel Amador (Rudd-O) <rudd-o@rudd-o.com>
+- Qubes 4.1 release
+
 * Wed Feb 17 2021 Manuel Amador (Rudd-O) <rudd-o@rudd-o.com>
 - Initial release

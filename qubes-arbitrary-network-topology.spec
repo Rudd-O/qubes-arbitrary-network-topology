@@ -3,7 +3,7 @@
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
 Name:           qubes-arbitrary-network-topology
-Version:        0.0.20
+Version:        0.0.21
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Turn your Qubes OS into an arbitrary network topology host
 BuildArch:      noarch
@@ -12,16 +12,14 @@ License:        GPLv2+
 URL:            https://github.com/Rudd-O/qubes-arbitrary-network-topology
 Source0:        https://github.com/Rudd-O/%{name}/archive/{%version}.tar.gz#/%{name}-%{version}.tar.gz
 
+%global pythoninterp %{_bindir}/python3
+
 BuildRequires:  make
 BuildRequires:  coreutils
 BuildRequires:  tar
 BuildRequires:  findutils
 BuildRequires:  python3
 BuildRequires:  python3-rpm-macros
-
-%global pythoninterp %{_bindir}/python3
-
-BuildRequires:  systemd-rpm-macros
 
 Requires:       qubes-core-agent-networking >= 4.1
 Requires:       python3
@@ -40,6 +38,8 @@ this software.
 %package -n     qubes-core-admin-addon-arbitrary-network-topology
 Summary:        dom0 administrative extension for Qubes arbitrary network topology
 
+%global pythoninterp %{_bindir}/python3
+
 BuildRequires:  make
 BuildRequires:  coreutils
 BuildRequires:  tar
@@ -47,8 +47,6 @@ BuildRequires:  findutils
 BuildRequires:  python3
 BuildRequires:  python3-rpm-macros
 BuildRequires:  python3-setuptools
-
-%global pythoninterp %{_bindir}/python3
 
 BuildRequires:  systemd-rpm-macros
 
@@ -86,10 +84,14 @@ find $RPM_BUILD_ROOT
 %{python3_sitelib}/qubesarbitrarynetworktopology-*.egg-info
 
 %post -n         qubes-core-admin-addon-arbitrary-network-topology
-%systemd_post qubesd.service
+# Restart qubesd after initial install.
+if [ $1 -eq 1 ] ; then
+    %{_bindir}/systemctl --system restart qubesd.service
+fi
 
 %postun -n       qubes-core-admin-addon-arbitrary-network-topology
-%systemd_postun_with_restart qubesd.service
+# Restart qubesd after upgrade or erasure.
+%{_bindir}/systemctl --system restart qubesd.service
 
 %changelog
 * Mon Mar 02 2022 Manuel Amador (Rudd-O) <rudd-o@rudd-o.com>

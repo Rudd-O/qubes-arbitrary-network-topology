@@ -62,7 +62,7 @@ Judicious use of the `qvm-features` command will allow you to have arbitrarily c
 To stop attaching network interfaces to a VM `V` which already has a feature property `attach-network-to`, simply issue this command:
 
 ```
-qvm-feature --unset V attach-network-to
+qvm-features --unset V attach-network-to
 ```
 
 ## How it works

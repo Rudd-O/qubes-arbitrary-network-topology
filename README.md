@@ -76,7 +76,7 @@ It's very simple, no magic involved.
 Build the two necessary RPM packages and then install them to the respective VMs:
 
 1. The `qubes-arbitrary-network-topology` RPM: use the command `make rpm` on a VM with the same Fedora version as your TemplateVM.  Then install the RPM in the TemplateVM, and power off the Template VM, as well as any other VMs you plan to attach networking to.
-2. The `qubes-core-admin-addon-arbitrary-network-topology` RPM: use the command `make rpm` on a VM or a `chroot` with the same Fedora version as your dom0 (that's Fedora 25 for Qubes 4.0).  Then copy the RPM into your `dom0`, and install the RPM.
+2. The `qubes-core-admin-addon-arbitrary-network-topology` RPM: use the command `make rpm` on a VM or a `chroot` with the same Fedora version as your dom0 (that's Fedora 25 for Qubes 4.0, Fedora 32 for Qubes 4.1, and Fedora 37 for Qubes 4.2).  Then copy the resultant admin addon `noarch` RPM file into your `dom0`, and install the RPM there using `sudo rpm -Uvh`.
 
 You should now be good to go.
 

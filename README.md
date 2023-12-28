@@ -1,9 +1,9 @@
 # Qubes arbitrary network topology
 
-This software lets you turn your [Qubes OS 4.1](https://www.qubes-os.org/) machine into
+This software lets you turn your [Qubes OS 4.2](https://www.qubes-os.org/) machine into
 an arbitrary network topology host.  It is ideal to create networks of interconnected VMs with arbitrary pathways between them, and minimal effort compared to manually setting everything up using `xl attach` in your `dom0` as `root`.
 
-**Note**: this software only supports release 4.1 and later of Qubes OS.  For support of release 4.0, see branch `r4.0`.
+**Note**: this software only supports release 4.2 and later of Qubes OS.  For support of release 4.1, see branch `r4.1`.  For support of release 4.0, see branch `r4.0`.
 
 ## How to use
 
@@ -64,6 +64,14 @@ To stop attaching network interfaces to a VM `V` which already has a feature pro
 ```
 qvm-features --unset V attach-network-to
 ```
+
+## Troubleshooting
+
+### The network interface attached to the backend VM does not have the name of the frontend VM
+
+You are missing the RPM named `qubes-arbitrary-network-topology` in the template of the backend VM (or, if standalone, on the VM itself).
+
+Install the RPM as per the instructions below, and power off the VM (and its template, if any), then power the VM back on.
 
 ## How it works
 

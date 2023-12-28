@@ -3,7 +3,7 @@
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
 Name:           qubes-arbitrary-network-topology
-Version:        0.0.21
+Version:        0.1.0
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Turn your Qubes OS into an arbitrary network topology host
 BuildArch:      noarch
@@ -21,7 +21,7 @@ BuildRequires:  findutils
 BuildRequires:  python3
 BuildRequires:  python3-rpm-macros
 
-Requires:       qubes-core-agent-networking >= 4.1
+Requires:       qubes-core-agent-networking >= 4.2
 Requires:       python3
 Requires:       python3-qubesdb
 
@@ -51,7 +51,7 @@ BuildRequires:  python3-setuptools
 BuildRequires:  systemd-rpm-macros
 
 Requires:       python3
-Requires:       qubes-core-dom0 >= 4.1
+Requires:       qubes-core-dom0 >= 4.2
 
 %description -n qubes-core-admin-addon-arbitrary-network-topology
 This package lets you create arbitrary network topologies in your

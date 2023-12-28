@@ -4,7 +4,7 @@ PYTHON=/usr/bin/python3
 
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-.PHONY: clean dist rpm srpm install-template install-dom0
+.PHONY: clean dist rpm srpm install-template install-dom0 test mypy unit
 
 clean:
 	cd $(ROOT_DIR) || exit $$? ; find -name '*.pyc' -o -name '*~' -print0 | xargs -0 rm -f
@@ -32,3 +32,11 @@ install-dom0:
 	PYTHONDONTWRITEBYTECODE=1 python3 setup.py install $(PYTHON_PREFIX_ARG) -O0 --root $(DESTDIR)
 
 install: install-dom0 install-template
+
+unit:
+	export PYTHONPATH="$$PWD" && python3 -m unittest -v
+
+mypy:
+	export PYTHONPATH="$$PWD" && mypy --python-version 3.11 --strict -p qubesarbitrarynetworktopology
+
+test: unit mypy

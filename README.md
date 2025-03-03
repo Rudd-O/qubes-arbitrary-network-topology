@@ -11,7 +11,7 @@ Suppose you have two VMs, which you want to be interconnected via (virtualized) 
 
 With this software, all you have to do is attach a feature `attach-network-to` onto `B`, like so:
 
-```
+```sh
 # Run me on dom0 as your regular Qubes login user.
 qvm-features B attach-network-to F
 # You can add multiple VMs to attach to, by separating them with newlines like so:
@@ -20,7 +20,26 @@ qvm-features B attach-network-to F
 #     H'
 ```
 
-And that's it.  As soon as both `B` and `F` are running, network interfaces will appear on each one; if you set the feature while the VMs were running, the interfaces will appear instantly.  The network interface in `F` will generally be named `eth0` (or `eth1` or other name increasing in value).  The network interface in `B` will be named after `F`.  IP networking on none of the network interfaces will be configured by the system.
+And that's it.  As soon as both `B` and `F` are running, network interfaces will appear on each one; if you set the feature while the VMs were running, the interfaces will appear instantly.
+
+Here's the lowdown on network interface naming:
+
+* The network interface in `F` will generally be named `eth0` (or `eth1` or other name sequentially increasing in value).
+* The network interface in `B` will be named after `F`.  This name is set by the script
+  `vif-route-nexus` deployed to your VMs in the `qubes-arbitrary-network-topology` package.
+
+You can force a particular MAC address onto the interface attached to `F` by specifying
+it as the value of the `attach-network-to` feature:
+
+```sh
+# Note the quoted string
+qvm-features B attach-network-to 'F frontend_mac=12:34:56:78:90:ab'
+```
+
+IP networking on none of the network interfaces will be autoconfigured.  Network
+addressing and routing are *on you*.  Fortunately, this should be doable (as explained
+below) since the frontend VM's network interface can have a static MAC address controlled
+by you, and the backend VM's network interface is named after the frontend.
 
 From this point on, all you have to do is configure the network interfaces — e.g. using NetworkManager — on those two VMs, then [adjust the firewall rules](https://www.qubes-os.org/doc/firewall/) on both VMs to permit input from one VM to the other, or even forwarding through them.  You could build a bridge, or set IP configuration to your liking.
 
@@ -84,7 +103,7 @@ It's very simple, no magic involved.
 Build the two necessary RPM packages and then install them to the respective VMs:
 
 1. The `qubes-arbitrary-network-topology` RPM: use the command `make rpm` on a VM with the same Fedora version as your TemplateVM.  Then install the RPM in the TemplateVM, and power off the Template VM, as well as any other VMs you plan to attach networking to.
-2. The `qubes-core-admin-addon-arbitrary-network-topology` RPM: use the command `make rpm` on a VM or a `chroot` with the same Fedora version as your dom0 (that's Fedora 25 for Qubes 4.0, Fedora 32 for Qubes 4.1, and Fedora 37 for Qubes 4.2).  Then copy the resultant admin addon `noarch` RPM file into your `dom0`, and install the RPM there using `sudo rpm -Uvh`.
+2. The `qubes-core-admin-addon-arbitrary-network-topology` RPM: use the command `make rpm` on a VM or a `chroot` or `toolbox` container with the same Fedora version as your dom0 (that's Fedora 25 for Qubes 4.0, Fedora 32 for Qubes 4.1, and Fedora 37 for Qubes 4.2).  Then copy the resultant admin addon `noarch` RPM file into your `dom0`, and install the RPM there using `sudo rpm -Uvh`.
 
 You should now be good to go.
 

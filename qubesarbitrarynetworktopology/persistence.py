@@ -11,7 +11,6 @@ log.setLevel(logging.INFO)
 
 
 class ConjoinStore(object):
-    # FIXME: store this in Qubes DB instead of in a file.
     PATH = "/qubes-active-network-topology"
 
     def load(self) -> ConjoinTracker:
@@ -21,10 +20,10 @@ class ConjoinStore(object):
             try:
                 if isinstance(d, bytes):
                     d = d.decode("utf-8")
-                d = json.loads(d)
+                loadedd: dict[str, tuple[str, str | None]] = json.loads(d)
             except (FileNotFoundError, json.decoder.JSONDecodeError):
-                d = {}
-            return ConjoinTracker.from_dict(d)
+                loadedd = {}
+            return ConjoinTracker.from_deserializable(loadedd)
         except BaseException:
             log.exception("Failure loading conjoin store")
             raise
@@ -32,9 +31,10 @@ class ConjoinStore(object):
             q.close()
 
     def save(self, o: ConjoinTracker) -> None:
+        to_be_saved = o.to_serializable()
         q = qubesdb.QubesDB()
         try:
-            oj = json.dumps(o)
+            oj = json.dumps(to_be_saved)
             q.write(self.PATH, oj)
         except BaseException:
             log.exception("Failure persisting conjoin store")

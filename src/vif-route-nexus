@@ -9,8 +9,7 @@ n=vif-route-nexus
 # via DHCP.
 # pt=/rw/config/nexus-peer-table
 
-logger -t vif-route-qubes "Interface is being managed"
-trap 'logger -t $n "There was an error configuring the VIF"' EXIT
+trap 'logger -t $n "There was an error configuring the VIF $vifname"' EXIT
 
 . /etc/xen/scripts/vif-common.sh
 
@@ -19,6 +18,7 @@ trap 'logger -t $n "There was an error configuring the VIF"' EXIT
 
 if [ "$command" = "online" ] ; then
     if [ "$pt" != "" ] ; then
+        logger -t $n "Interface $vifname is being managed by qubes-arbitrary-network-topology"
         ip link set dev "$vifname" up
         ip=$(grep "^$vifname " "$pt" | awk ' { print $2 } ')
         routes=$(grep "^$vifname " "$pt" | awk ' { print $3 } ')

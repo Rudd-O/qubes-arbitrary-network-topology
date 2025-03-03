@@ -10,6 +10,7 @@ from qubesarbitrarynetworktopology.conjoin import (
     ConjoinTracker,
     ACTION_ADD,
     ACTION_REMOVE,
+    MacAddress,
 )
 from qubesarbitrarynetworktopology.persistence import ConjoinStore
 
@@ -29,17 +30,19 @@ def with_qubes() -> typing.Generator[qubes.Qubes, None, None]:
         log.debug("Closed Qubes connection")
 
 
-def attach(backend: str, frontend: str) -> str:
+def attach(backend: str, frontend: str, frontend_mac: MacAddress | None = None) -> str:
     """Returns the network VIF ID as a string."""
-    _ = subprocess.run(
-        [
-            "xl",
-            "network-attach",
-            frontend,
+    cmd = (
+        ["xl", "network-attach", frontend]
+        + (["mac=%s" % frontend_mac] if frontend_mac else [])
+        + [
             "backend=%s" % backend,
             "vifname=%s" % frontend,
             "script=%s" % "vif-route-nexus",
-        ],
+        ]
+    )
+    _ = subprocess.run(
+        cmd,
         check=True,
     )
     p = subprocess.run(
@@ -67,6 +70,7 @@ class QubesArbitraryNetworkTopologyExtension(qubes.ext.Extension):  # type:ignor
         self,
         force_feature: str | None = None,
         for_vm: qubes.vm.BaseVM | None = None,
+        apply: bool = True,
     ) -> None:
         with with_qubes() as q:
             if self.config is None or for_vm is not None:
@@ -78,7 +82,10 @@ class QubesArbitraryNetworkTopologyExtension(qubes.ext.Extension):  # type:ignor
                     )
                     for backend in q.domains
                 }
-                self.config = ConjoinTracker.from_vm_table(vm_table)
+                config = ConjoinTracker.from_vm_table(vm_table)
+                if not apply:
+                    return
+                self.config = config
                 log.info("Loaded configuration: %s", self.config)
         if self.active is None:
             self.active = ConjoinStore().load()
@@ -103,7 +110,9 @@ class QubesArbitraryNetworkTopologyExtension(qubes.ext.Extension):  # type:ignor
                     continue
                 if action == ACTION_ADD:
                     try:
-                        attached_vifid = attach(backend, frontend)
+                        attached_vifid = attach(
+                            backend, frontend, frontend_mac=config.frontend_mac
+                        )
                         self.active.conjoin(
                             backend,
                             frontend,
@@ -111,10 +120,11 @@ class QubesArbitraryNetworkTopologyExtension(qubes.ext.Extension):  # type:ignor
                             frontend_network_id=attached_vifid,
                         )
                         log.info(
-                            "Attached backend %s to frontend %s with frontend VIF %s",
+                            "Attached backend %s to frontend %s with frontend VIF %s config %s",
                             backend,
                             frontend,
                             attached_vifid,
+                            config,
                         )
                     except subprocess.CalledProcessError:
                         log.exception(
@@ -128,10 +138,11 @@ class QubesArbitraryNetworkTopologyExtension(qubes.ext.Extension):  # type:ignor
                         if vifid_to_detach is not None:
                             detach(frontend, vifid_to_detach)
                             log.info(
-                                "Detached backend %s from frontend %s VIF %s",
+                                "Detached backend %s from frontend %s VIF %s config %s",
                                 backend,
                                 frontend,
                                 vifid_to_detach,
+                                config,
                             )
                         else:
                             log.info(
@@ -194,6 +205,20 @@ class QubesArbitraryNetworkTopologyExtension(qubes.ext.Extension):  # type:ignor
                     )
                 self.active.disjoin(backend, frontend)
             ConjoinStore().save(self.active)
+
+    @qubes.ext.handler(
+        "domain-feature-pre-set:attach-network-to",  # type: ignore
+    )
+    def on_attach_network_to_before_change(
+        self,
+        subject: qubes.vm.BaseVM,
+        event: typing.Any,
+        feature: typing.Any,
+        value: str,
+        oldvalue: str | None = None,
+    ) -> None:
+        # Attempt to load configuration with new value, but do not apply it.
+        self._delayed_graphs_loader(value, subject.name, apply=False)
 
     @qubes.ext.handler(
         "domain-feature-set:attach-network-to",  # type: ignore

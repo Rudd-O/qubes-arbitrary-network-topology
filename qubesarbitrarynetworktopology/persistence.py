@@ -1,6 +1,7 @@
 import json
 import logging
 import qubesdb
+import typing
 
 
 from qubesarbitrarynetworktopology.conjoin import ConjoinTracker
@@ -8,6 +9,11 @@ from qubesarbitrarynetworktopology.conjoin import ConjoinTracker
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
+
+
+class OldConfig(typing.TypedDict):
+    config: bool
+    frontend_network_id: str | None
 
 
 class ConjoinStore(object):
@@ -20,10 +26,17 @@ class ConjoinStore(object):
             try:
                 if isinstance(d, bytes):
                     d = d.decode("utf-8")
-                loadedd: dict[str, tuple[str, str | None]] = json.loads(d)
+                loadedd: dict[str, tuple[str, str | None] | OldConfig] = json.loads(d)
             except (FileNotFoundError, json.decoder.JSONDecodeError):
                 loadedd = {}
-            return ConjoinTracker.from_deserializable(loadedd)
+            final: dict[str, tuple[str, str | None]] = {}
+            for k, v in loadedd.items():
+                if isinstance(v, tuple):
+                    cfg = v
+                else:
+                    cfg = ("", v.get("frontend_network_id"))
+                final[k] = cfg
+            return ConjoinTracker.from_deserializable(final)
         except BaseException:
             log.exception("Failure loading conjoin store")
             raise

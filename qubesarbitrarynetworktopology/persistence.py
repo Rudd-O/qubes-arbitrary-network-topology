@@ -31,8 +31,8 @@ class ConjoinStore(object):
                 loadedd = {}
             final: dict[str, tuple[str, str | None]] = {}
             for k, v in loadedd.items():
-                if isinstance(v, tuple):
-                    cfg = v
+                if isinstance(v, tuple) or isinstance(v, list):
+                    cfg = (v[0], v[1])
                 else:
                     cfg = ("", v.get("frontend_network_id"))
                 final[k] = cfg

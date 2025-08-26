@@ -3,7 +3,7 @@
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
 Name:           qubes-arbitrary-network-topology
-Version:        0.2.1
+Version:        0.2.2
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Turn your Qubes OS into an arbitrary network topology host
 BuildArch:      noarch
